@@ -7,8 +7,10 @@
 # from https://github.com/fivethirtyeight/russian-troll-tweets
 
 library(stringr)
+library(igraph)
 
 #Read in all the files and process
+#fnames<-as.list(dir(path="../../../data/russian-troll-tweets/", pattern=".csv"))
 fnames<-as.list(dir(pattern=".csv"))
 f1<-do.call("rbind",lapply(fnames,read.csv,stringsAsFactors=FALSE))
 
@@ -21,7 +23,7 @@ gc()
 #Divide data
 f1.split<-split(f1,f=f1$author)
 
-#generate mention list 
+#generate mention list
 f1.neighbs<-lapply(f1.split,function(x) unlist(str_match_all(x[,3],"(?<=@)[^\\s:]+")))
 
 #Generate unique senders,receivers
@@ -48,6 +50,7 @@ trollnet.mat[trolls.senders[i],trolls.receivers[i]]<-trollnet.mat[trolls.senders
 }
 
 #Build network and add attributes
+library(network)
 trolls<-as.network(trollnet.mat)
 set.edge.value(trolls,"tweets",trollnet.mat)
 trolls.counts<-table(f1[,2])
@@ -88,10 +91,24 @@ set.vertex.attribute(trolls,"minpostdate",as.character(minpostdate[match(c(troll
 
 set.seed(20818)
 
-png("RTRT.png",width=3000,height=2500,res=100,pointsize=24)
+library(RColorBrewer)
+
+png("new.png",width=5000,height=5000,res=400,pointsize=12)
 par(mar=c(3,1,3,1),xpd=TRUE)
-gplot(trolls,vertex.col=as.color(trolls%v%"accountcategory"),displayisolates=FALSE,vertex.cex=abs(log(trolls%v%"maxfollowers"+2,base=10)-1),edge.col=rgb(0,0,0,.5),main="Russian Troll to Russian Troll Twitter Mention Network (n=1245) \n fivethirtyeight.com Data 08/01/18 \ by @csmarcum")
-legend("bottom",legend=unique(trolls%v%"accountcategory"),pch=19,col=unique(as.color(trolls%v%"accountcategory")),title="Account Type",horiz=TRUE)
+#colors = c('red', 'orange', 'yellow', 'green', 'blue', 'magenta', 'chartreuse', 'cyan', 'pink')
+#palette(rainbow(7))
+#palette(colors)
+brewer.pal(7, "Set1")
+palette(brewer.pal(7, "Set1"))
+plot(trolls, vertex.col=as.color(trolls%v%"accountcategory", opacity=.1),
+	vertex.frame.color="black",
+	displayisolates=FALSE, vertex.cex=abs(log(trolls%v%"maxfollowers"+2,base=10)-1),
+	edge.col=rgb(0,0,0,.5),
+	main="Russian Troll to Russian Troll Twitter Mention Network (n=1245) \n fivethirtyeight.com Data 08/01/18 \ by @csmarcum")
+legend("bottom",
+	legend=unique(trolls%v%"accountcategory"), pch=19,
+	col=unique(as.color(trolls%v%"accountcategory")),
+	title="Account Type", horiz=TRUE)
 dev.off()
 
 stop("The next section eats memory for breakfast.")
@@ -197,4 +214,3 @@ png("RTRTl.png",width=3000,height=2500,res=100,pointsize=24)
 par(mar=c(1,1,3,1),xpd=TRUE)
 gplot(trollnet.mat,displayisolates=FALSE,vertex.col="cornflowerblue",main="Russian Troll to Russian Troll Twitter Mention Network (n=331) \n fivethirtyeight.com Data 08/01/18 \ by @csmarcum",displaylabels=TRUE)
 dev.off()
-
